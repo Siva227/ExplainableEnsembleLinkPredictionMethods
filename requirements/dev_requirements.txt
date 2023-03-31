@@ -1,0 +1,16 @@
+-r test_requirements.txt
+
+# dev requirements
+tox
+
+# build requirements
+build
+
+# docs requirements
+Sphinx
+sphinx-click
+
+# notebook maintenance requirements
+jupyter
+nb_black
+nbdime
