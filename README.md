@@ -4,7 +4,7 @@
 Explainable Ensemble Link Prediction
 ====================================
 
-This repository contains experiments and code written for the purpose of skin disease detection.
+This repository contains experiments and code written for the purpose of explainable ensemble link prediction.
 
 Project Organization
 --------------------
