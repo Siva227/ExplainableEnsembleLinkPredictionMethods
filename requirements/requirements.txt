@@ -6,4 +6,4 @@ numpy
 scipy
 click
 seaborn
-networkxy
+networkx
