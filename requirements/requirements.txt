@@ -1,4 +1,4 @@
-tensorflow
+# tensorflow
 matplotlib
 pandas
 scikit-learn
@@ -7,3 +7,6 @@ scipy
 click
 seaborn
 networkx
+infomap
+graph-tool
+python-louvain
