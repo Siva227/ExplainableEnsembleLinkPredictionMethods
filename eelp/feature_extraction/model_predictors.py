@@ -8,6 +8,9 @@ from infomap import Infomap
 from ..utils import nx2gt
 from ._base import GraphScorer
 
+# TODO: Improve computation speed with parallelization where possible
+# TODO: Add Documentation
+
 
 class LouvainScorer(GraphScorer):
     def __init__(
@@ -70,28 +73,33 @@ class InfomapScorer(GraphScorer):
         for e_pair in X.itertuples(name=None, index=False):
             if e_pair in self.input_network.edges:
                 self.im.remove_link(*e_pair)
-            self.im.run(initial_partition=self.im_modules, no_infomap=True)
-            im_wo_edge = self.im.codelength
+                self.im.run(initial_partition=self.im_modules, no_infomap=True)
+                im_wo_edge = self.im.codelength
+            else:
+                im_wo_edge = self.im_code_length
             self.im.add_link(*e_pair)
             self.im.run(initial_partition=self.im_modules, no_infomap=True)
             im_w_edge = self.im.codelength
-            im_score.append(im_w_edge - im_wo_edge)
+            im_score.append(im_wo_edge - im_w_edge)
             if e_pair not in self.input_network.edges:
                 self.im.remove_link(*e_pair)
         return np.array(im_score).reshape(-1, 1)
 
 
 class MDLScorer(GraphScorer):
+    # TODO: Check problems with community detection
     def __init__(self, input_network, deg_corr=False):
         super(MDLScorer, self).__init__(input_network)
         self.gt_in = nx2gt(input_network)
         self.deg_corr = deg_corr
         self.block_state = None
+        self.base_entropy = None
 
     def fit(self, X, y=None):
-        self.block_state: BlockState = minimize_blockmodel_dl(
+        self.block_state = minimize_blockmodel_dl(
             self.gt_in, state_args=dict(deg_corr=self.deg_corr)
         )
+        self.base_entropy = self.block_state.entropy()
         return self
 
     def transform(self, X):
@@ -101,10 +109,12 @@ class MDLScorer(GraphScorer):
             edge = in_gt_copy.edge(in_gt_copy.vertex(e_pair[0]), in_gt_copy.vertex(e_pair[1]))
             if edge:
                 in_gt_copy.remove_edge(edge)
-            bs_copy: BlockState = self.block_state.copy(in_gt_copy)
-            ent_wo_edge = bs_copy.entropy()
+                bs_copy = self.block_state.copy(in_gt_copy)
+                ent_wo_edge = bs_copy.entropy()
+            else:
+                ent_wo_edge = self.base_entropy
             in_gt_copy.add_edge(in_gt_copy.vertex(e_pair[0]), in_gt_copy.vertex(e_pair[1]))
-            bs_copy: BlockState = self.block_state.copy(in_gt_copy)
+            bs_copy = self.block_state.copy(in_gt_copy)
             ent_w_edge = bs_copy.entropy()
-            dl_score.append(ent_w_edge - ent_wo_edge)
+            dl_score.append(ent_wo_edge - ent_w_edge)
         return np.array(dl_score).reshape(-1, 1)
