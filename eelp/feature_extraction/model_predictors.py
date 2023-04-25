@@ -59,13 +59,13 @@ class InfomapScorer(GraphScorer):
         self.im_modules = None
         self.im_code_length = None
 
-    def fit(self, X):
+    def fit(self, X, y=None):
         self.im.run()
         self.im_modules = self.im.get_modules()
         self.im_code_length = self.im.codelength
         return self
 
-    def transform(self, X, y=None):
+    def transform(self, X):
         im_score = []
         for e_pair in X.itertuples(name=None, index=False):
             if e_pair in self.input_network.edges:
@@ -99,7 +99,7 @@ class MDLScorer(GraphScorer):
         for e_pair in X.itertuples(name=None, index=False):
             in_gt_copy = self.gt_in.copy()
             edge = in_gt_copy.edge(in_gt_copy.vertex(e_pair[0]), in_gt_copy.vertex(e_pair[1]))
-            if not edge:
+            if edge:
                 in_gt_copy.remove_edge(edge)
             bs_copy: BlockState = self.block_state.copy(in_gt_copy)
             ent_wo_edge = bs_copy.entropy()
@@ -107,4 +107,4 @@ class MDLScorer(GraphScorer):
             bs_copy: BlockState = self.block_state.copy(in_gt_copy)
             ent_w_edge = bs_copy.entropy()
             dl_score.append(ent_w_edge - ent_wo_edge)
-        return np.arrau(dl_score).reshape(-1, 1)
+        return np.array(dl_score).reshape(-1, 1)

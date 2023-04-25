@@ -8,5 +8,5 @@ click
 seaborn
 networkx
 infomap
-graph-tool
+# graph-tool
 python-louvain

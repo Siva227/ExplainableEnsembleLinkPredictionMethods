@@ -48,7 +48,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     url=URL,
     packages=find_packages(exclude=("tests",)),
-    package_data={"explainable-ensemble-link-prediction": ["VERSION"]},
+    package_data={"eelp": ["VERSION"]},
     install_requires=list_reqs(),
     extras_require={},
     include_package_data=True,
