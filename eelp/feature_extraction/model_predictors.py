@@ -87,7 +87,6 @@ class InfomapScorer(GraphScorer):
 
 
 class MDLScorer(GraphScorer):
-    # TODO: Check problems with community detection
     def __init__(self, input_network, deg_corr=False):
         super(MDLScorer, self).__init__(input_network)
         self.gt_in = nx2gt(input_network)
@@ -103,18 +102,7 @@ class MDLScorer(GraphScorer):
         return self
 
     def transform(self, X):
-        dl_score = []
-        for e_pair in X.itertuples(name=None, index=False):
-            in_gt_copy = self.gt_in.copy()
-            edge = in_gt_copy.edge(in_gt_copy.vertex(e_pair[0]), in_gt_copy.vertex(e_pair[1]))
-            if edge:
-                in_gt_copy.remove_edge(edge)
-                bs_copy = self.block_state.copy(in_gt_copy)
-                ent_wo_edge = bs_copy.entropy()
-            else:
-                ent_wo_edge = self.base_entropy
-            in_gt_copy.add_edge(in_gt_copy.vertex(e_pair[0]), in_gt_copy.vertex(e_pair[1]))
-            bs_copy = self.block_state.copy(in_gt_copy)
-            ent_w_edge = bs_copy.entropy()
-            dl_score.append(ent_wo_edge - ent_w_edge)
+        dl_score = [
+            self.block_state.get_edges_prob([i]) for i in X.itertuples(name=None, index=False)
+        ]
         return np.array(dl_score).reshape(-1, 1)
