@@ -1,9 +1,10 @@
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils import check_array, check_X_y
+from sklearn.utils import check_array
 
 
 # TODO: Add check fitted
+# TODO: Add ClassNamePrefix ClassNamePrefixFeaturesOutMixin
 class GraphScorer(BaseEstimator, TransformerMixin):
     def __init__(self, input_network):
         self.input_network = input_network
