@@ -1,9 +1,9 @@
 import itertools
 
-from sklearn.utils import shuffle
 import networkx as nx
 import pandas as pd
 from littleballoffur.edge_sampling import RandomEdgeSampler, RandomEdgeSamplerWithInduction
+from sklearn.utils import shuffle
 
 
 class GraphSampler:
