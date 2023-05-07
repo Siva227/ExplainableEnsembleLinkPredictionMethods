@@ -22,6 +22,7 @@ class AdamicAdarScorer(GraphScorer):
         return self
 
     def transform(self, X):
+        X = self.make_dataset(X)
         aa = nx.adamic_adar_index(self.input_network, X.itertuples(index=False, name=None))
         return np.array([i[-1] for i in aa]).reshape(-1, 1)
 
@@ -31,6 +32,7 @@ class ShortestPathScorer(GraphScorer):
         return self
 
     def transform(self, X):
+        X = self.make_dataset(X)
         sp = []
         for row in X.itertuples():
             sp.append(nx.shortest_path_length(self.input_network, row.node_i, row.node_j))
@@ -42,6 +44,7 @@ class JaccardScorer(GraphScorer):
         return self
 
     def transform(self, X):
+        X = self.make_dataset(X)
         js = nx.jaccard_coefficient(self.input_network, X.itertuples(index=False, name=False))
         return np.array([i[-1] for i in js]).reshape(-1, 1)
 
@@ -51,6 +54,7 @@ class PreferentialAttachmentScorer(GraphScorer):
         return self
 
     def transform(self, X):
+        X = self.make_dataset(X)
         pa = nx.preferential_attachment(self.input_network, X.itertuples(index=False, name=False))
         return np.array([i[-1] for i in pa]).reshape(-1, 1)
 
@@ -60,6 +64,7 @@ class LHNScorer(GraphScorer):
         return self
 
     def transform(self, X):
+        X = self.make_dataset(X)
         lhn = []
         for e_pair in X.itertuples(index=False, name=False):
             num_common_neighbors = len(
@@ -90,6 +95,7 @@ class PersonalizedPageRankScorer(GraphScorer):
         return self
 
     def transform(self, X):
+        X = self.make_dataset(X)
         ppr = []
         for e_pair in X.itertuples(index=False, name=False):
             ppr.append(self.pers_page_rank[e_pair[0]][e_pair[1]])

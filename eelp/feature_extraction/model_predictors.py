@@ -42,6 +42,7 @@ class LouvainScorer(GraphScorer):
         return self
 
     def transform(self, X):
+        X = self.make_dataset(X)
         score = []
         for e_pair in X.itertuples(name=None, index=False):
             in_copy = self.input_network.copy()
@@ -69,6 +70,7 @@ class InfomapScorer(GraphScorer):
         return self
 
     def transform(self, X):
+        X = self.make_dataset(X)
         im_score = []
         for e_pair in X.itertuples(name=None, index=False):
             if e_pair in self.input_network.edges:
@@ -102,6 +104,7 @@ class MDLScorer(GraphScorer):
         return self
 
     def transform(self, X):
+        X = self.make_dataset(X)
         dl_score = [
             self.block_state.get_edges_prob([i]) for i in X.itertuples(name=None, index=False)
         ]
