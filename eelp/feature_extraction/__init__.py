@@ -1,4 +1,4 @@
-from ._base import GraphScorer
+from ._base import GraphScorer, GlobalGraphPropertiesScorer
 from .model_predictors import InfomapScorer, LouvainScorer, MDLScorer
 from .node_predictors import (
     AvgNeighborDegreeScorer,

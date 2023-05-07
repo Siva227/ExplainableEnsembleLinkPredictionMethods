@@ -21,9 +21,9 @@ class GraphScorer(BaseEstimator, TransformerMixin):
             raise ValueError("Bad input shape")
 
 
-class GlobalGraphScorer(GraphScorer):
+class GlobalGraphPropertiesScorer(GraphScorer):
     def __init__(self, input_network):
-        super(GlobalGraphScorer, self).__init__(input_network)
+        super(GlobalGraphPropertiesScorer, self).__init__(input_network)
         self.num_nodes = None
         self.num_edges = None
         self.average_degree = None
