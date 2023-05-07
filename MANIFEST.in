@@ -3,7 +3,7 @@ include *.md
 include *.pkl
 recursive-include ./eelp/*
 
-include qoncoct/VERSION
+include eelp/VERSION
 
 include ./requirements/requirements.txt
 include ./requirements/test_requirements.txt
