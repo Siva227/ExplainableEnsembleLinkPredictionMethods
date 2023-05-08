@@ -196,5 +196,5 @@ def process_graphs(payload):
             # TODO: Save community assignments
             joblib.dump(best_model, g_data["output_path"] / "best_model.joblib")
 
-        results_df = pd.DataFrame.from_records(out_data)
-        results_df.to_pickle(payload["output_path"])
+    results_df = pd.DataFrame.from_records(out_data)
+    results_df.to_pickle(payload["output_path"])

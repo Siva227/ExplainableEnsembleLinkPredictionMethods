@@ -29,7 +29,7 @@ def main(input_data_path, output_path, num_samples, sampling_method, num_procs):
     with open(input_data_path, "rb") as f:
         df = pickle.load(f)
     input_graphs = []
-    for row in df.iloc[:10,].itertuples(index=False):
+    for row in df.itertuples(index=False):
         graph_out_path = output_path / f"{int(row.network_index)}"
         graph_out_path.mkdir(exist_ok=True, parents=True)
         input_graphs.append(
