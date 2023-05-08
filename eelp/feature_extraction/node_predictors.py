@@ -122,7 +122,7 @@ class LoadCentralityScorer(GraphScorer):
 
 class KatzCentralityScorer(GraphScorer):
     def __init__(self, input_network):
-        super(KatzCentralityScorer, self).__init__()
+        super(KatzCentralityScorer, self).__init__(input_network)
         self.katz_cen_dict_ = None
 
     def fit(self, X, y=None):

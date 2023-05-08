@@ -3,7 +3,7 @@ import itertools
 import networkx as nx
 import pandas as pd
 from littleballoffur.edge_sampling import RandomEdgeSampler, RandomEdgeSamplerWithInduction
-from sklearn.utils import shuffle
+from sklearn.utils import check_random_state, shuffle
 
 
 class GraphSampler:
@@ -20,7 +20,8 @@ class GraphSampler:
         self.G_tr = nx.Graph()
         self.G_tr.add_nodes_from(self.input_network.nodes)
 
-    def sample(self, num_samples=10000, shuffle=False):
+    def sample(self, num_samples=10000, shuffle_flag=False):
+        self.random_state = check_random_state(self.random_state)
         self.create_subgraphs()
         tr_df = self.get_pos_neg_edges(self.G_ho, self.G_tr)
         ho_df = self.get_pos_neg_edges(self.input_network, self.G_ho)
@@ -31,7 +32,7 @@ class GraphSampler:
         ho_sample = ho_df.groupby("label").sample(
             n=num_samples, replace=True, random_state=self.random_state
         )
-        if shuffle:
+        if shuffle_flag:
             tr_sample = shuffle(tr_sample)
             ho_sample = shuffle(ho_sample)
             tr_sample.reset_index(drop=True, inplace=True)

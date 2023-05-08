@@ -28,14 +28,24 @@ class AdamicAdarScorer(GraphScorer):
 
 
 class ShortestPathScorer(GraphScorer):
+    def __init__(self, input_network):
+        super(ShortestPathScorer, self).__init__(input_network)
+        self.shortest_path_mat = None
+
     def fit(self, X, y=None):
+        self.shortest_path_mat = dict(nx.shortest_path_length(self.input_network))
         return self
 
     def transform(self, X):
         X = self.make_dataset(X)
         sp = []
         for row in X.itertuples():
-            sp.append(nx.shortest_path_length(self.input_network, row.node_i, row.node_j))
+            if row.node_j in self.shortest_path_mat[row.node_i].keys():
+                path_length = self.shortest_path_mat[row.node_i][row.node_j]
+            else:
+                # path_length =np.inf
+                path_length = 9999
+            sp.append(path_length)
         return np.array(sp).reshape(-1, 1)
 
 
