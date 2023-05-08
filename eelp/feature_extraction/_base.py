@@ -1,12 +1,19 @@
+import re
+
 import networkx as nx
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 
-
 # TODO: Add check fitted
-# TODO: Add ClassNamePrefix ClassNamePrefixFeaturesOutMixin
+
+
+def camel_to_snake_case(input_str):
+    s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", input_str)
+    return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+
 class GraphScorer(BaseEstimator, TransformerMixin):
     def __init__(self, input_network):
         self.input_network = input_network
@@ -19,6 +26,13 @@ class GraphScorer(BaseEstimator, TransformerMixin):
             return pd.DataFrame(X, columns=["node_i", "node_j"])
         else:
             raise ValueError("Bad input shape")
+
+    def get_feature_names_out(self, input_features=None):
+        estimator_name = self.__class__.__name__
+        # remove the scorer
+        estimator_name = estimator_name.replace("Scorer", "")
+        estimator_name = camel_to_snake_case(estimator_name)
+        return [estimator_name]
 
 
 class GlobalGraphPropertiesScorer(GraphScorer):
@@ -62,3 +76,15 @@ class GlobalGraphPropertiesScorer(GraphScorer):
         )
         output_arr = np.tile(output_vector, (num_rows, 1))
         return output_arr
+
+    def get_feature_names_out(self, input_features=None):
+        return [
+            "num_nodes",
+            "num_edges",
+            "avg_degree",
+            "degree_variance",
+            "net_diameter",
+            "net_transitivity",
+            "degree_assortativity",
+            "avg_clustering_coeff",
+        ]

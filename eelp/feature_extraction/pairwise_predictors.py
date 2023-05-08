@@ -45,7 +45,7 @@ class JaccardScorer(GraphScorer):
 
     def transform(self, X):
         X = self.make_dataset(X)
-        js = nx.jaccard_coefficient(self.input_network, X.itertuples(index=False, name=False))
+        js = nx.jaccard_coefficient(self.input_network, X.itertuples(index=False, name=None))
         return np.array([i[-1] for i in js]).reshape(-1, 1)
 
 
@@ -55,7 +55,7 @@ class PreferentialAttachmentScorer(GraphScorer):
 
     def transform(self, X):
         X = self.make_dataset(X)
-        pa = nx.preferential_attachment(self.input_network, X.itertuples(index=False, name=False))
+        pa = nx.preferential_attachment(self.input_network, X.itertuples(index=False, name=None))
         return np.array([i[-1] for i in pa]).reshape(-1, 1)
 
 
@@ -66,7 +66,7 @@ class LHNScorer(GraphScorer):
     def transform(self, X):
         X = self.make_dataset(X)
         lhn = []
-        for e_pair in X.itertuples(index=False, name=False):
+        for e_pair in X.itertuples(index=False, name=None):
             num_common_neighbors = len(
                 list(nx.common_neighbors(self.input_network, e_pair[0], e_pair[1]))
             )
@@ -97,6 +97,6 @@ class PersonalizedPageRankScorer(GraphScorer):
     def transform(self, X):
         X = self.make_dataset(X)
         ppr = []
-        for e_pair in X.itertuples(index=False, name=False):
+        for e_pair in X.itertuples(index=False, name=None):
             ppr.append(self.pers_page_rank[e_pair[0]][e_pair[1]])
         return np.array(ppr).reshape(-1, 1)
