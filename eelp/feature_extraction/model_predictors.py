@@ -40,7 +40,9 @@ class LouvainScorer(GraphScorer):
             self.randomize,
             self.random_state,
         )
-        self.base_modularity_ = community_louvain.modularity(self.best_partition_, self.input_network)
+        self.base_modularity_ = community_louvain.modularity(
+            self.best_partition_, self.input_network
+        )
         return self
 
     def transform(self, X):
