@@ -1,5 +1,8 @@
+import logging
+
 import joblib
 import networkx as nx
+import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.compose import ColumnTransformer
@@ -143,35 +146,46 @@ def persist_features(e_sample, X_feat, y, feature_names):
 
 
 def process_graphs(payload):
+    logger = logging.getLogger(__name__)
+    logger.debug("Starting process {}".format(payload["id"]))
     out_data = []
     for g_data in payload["input_graphs"]:
-        G, sampler, tr_sample, ho_sample = sample_input_graph(
-            g_data["num_nodes"],
-            g_data["edge_list"],
-            payload["num_samples"],
-            payload["sampling_method"],
-        )
-        training_pipe = create_pipeline(sampler.G_tr, G)
-        holdout_pipe = create_pipeline(sampler.G_ho, G)
-        training_pipe, X_tr, y_tr, feat_names_tr = compute_features(training_pipe, tr_sample)
-        holdout_pipe, X_ho, y_ho, feat_names_ho = compute_features(holdout_pipe, ho_sample)
-        process_success = True
-        if list(feat_names_tr) != list(feat_names_ho):
-            process_success = False
-        if process_success:
-            final_tr_df = persist_features(tr_sample, X_tr, y_tr, feat_names_tr)
-            final_ho_df = persist_features(ho_sample, X_ho, y_ho, feat_names_ho)
-            grid_search, grid_results = model_selection(
-                final_tr_df.loc[:, feat_names_tr], final_tr_df.label_true.values
+        try:
+            G, sampler, tr_sample, ho_sample = sample_input_graph(
+                g_data["num_nodes"],
+                g_data["edge_list"],
+                payload["num_samples"],
+                payload["sampling_method"],
             )
-            final_ho_df.to_csv(g_data["output_path"] / "holdout_features.csv", index=False)
-            final_tr_df.to_csv(g_data["output_path"] / "training_features.csv", index=False)
-            grid_results.to_csv(g_data["output_path"] / "grid_search_results.csv", index=False)
-            best_model = grid_search.best_estimator_
-            feature_importances = best_model.feature_importances_
-            ho_pred = best_model.predict(final_ho_df.loc[:, feat_names_tr])
-            ho_proba = best_model.predict_proba(final_ho_df.loc[:, feat_names_tr])
+            training_pipe = create_pipeline(sampler.G_tr, G)
+            holdout_pipe = create_pipeline(sampler.G_ho, G)
+            training_pipe, X_tr, y_tr, feat_names_tr = compute_features(training_pipe, tr_sample)
+            holdout_pipe, X_ho, y_ho, feat_names_ho = compute_features(holdout_pipe, ho_sample)
+            process_success = True
+        except Exception:
+            logger.exception("Feature Generation Failed: {}".format(g_data["network_index"]))
+            continue
+        try:
+            if np.all(feat_names_tr == feat_names_ho):
+                process_success = False
+            if process_success:
+                final_tr_df = persist_features(tr_sample, X_tr, y_tr, feat_names_tr)
+                final_ho_df = persist_features(ho_sample, X_ho, y_ho, feat_names_ho)
+                grid_search, grid_results = model_selection(
+                    final_tr_df.loc[:, feat_names_tr], final_tr_df.label_true.values
+                )
+                final_ho_df.to_csv(g_data["output_path"] / "holdout_features.csv", index=False)
+                final_tr_df.to_csv(g_data["output_path"] / "training_features.csv", index=False)
+                grid_results.to_csv(g_data["output_path"] / "grid_search_results.csv", index=False)
+                best_model = grid_search.best_estimator_
+                feature_importances = best_model.feature_importances_
+                ho_pred = best_model.predict(final_ho_df.loc[:, feat_names_tr])
+                ho_proba = best_model.predict_proba(final_ho_df.loc[:, feat_names_tr])
+        except Exception:
+            logger.exception("Model Training Failed: {}".format(g_data["network_index"]))
+            continue
             # holdout performance metrics
+        try:
             cm = metrics.confusion_matrix(final_ho_df.label_true.values, ho_pred)
             (
                 precision_total,
@@ -192,9 +206,14 @@ def process_graphs(payload):
             output_dict["feature_importances"] = dict(zip(feat_names_tr, feature_importances))
             output_dict["train_edges"] = nx.to_pandas_edgelist(sampler.G_tr).values
             output_dict["holdout_edges"] = nx.to_pandas_edgelist(sampler.G_ho).values
+            output_dict["holdout_confusion_matrix"] = cm
+            output_dict["chunk_id"] = payload["id"]
             out_data.append(output_dict)
             # TODO: Save community assignments
             joblib.dump(best_model, g_data["output_path"] / "best_model.joblib")
+        except Exception:
+            logger.exception("Failed to capture metrics: {}".format(g_data["network_index"]))
+            continue
 
     results_df = pd.DataFrame.from_records(out_data)
     results_df.to_pickle(payload["output_path"])
