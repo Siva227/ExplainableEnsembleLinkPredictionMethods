@@ -1,4 +1,5 @@
 import itertools
+import warnings
 
 import networkx as nx
 import pandas as pd
@@ -47,6 +48,11 @@ class GraphSampler:
         n_edges_tr = int(self.alpha * nx.number_of_edges(self.G_ho))
         s2 = self.sampler_dict[self.sampling_method](n_edges_tr)
         G2 = s2.sample(self.G_ho)
+        if nx.number_of_edges(G2) != n_edges_tr:
+            # Fallback to random sampling
+            warnings.warn(f"Sampling method {self.sampling_method} failed. Falling back to rs")
+            s2 = self.sampler_dict["rs"](n_edges_tr)
+            G2 = s2.sample(self.G_ho)
         self.G_tr.add_edges_from(G2.edges)
 
     def get_pos_neg_edges(self, G_orig, G_sample):
