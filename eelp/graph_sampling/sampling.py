@@ -3,12 +3,20 @@ import warnings
 
 import networkx as nx
 import pandas as pd
-from littleballoffur.edge_sampling import RandomEdgeSampler, RandomEdgeSamplerWithInduction
+from littleballoffur.edge_sampling import (
+    HybridNodeEdgeSampler,
+    RandomEdgeSampler,
+    RandomEdgeSamplerWithInduction,
+)
 from sklearn.utils import check_random_state, shuffle
 
 
 class GraphSampler:
-    sampler_dict = {"rs": RandomEdgeSampler, "rswi": RandomEdgeSamplerWithInduction}
+    sampler_dict = {
+        "rs": RandomEdgeSampler,
+        "rswi": RandomEdgeSamplerWithInduction,
+        "hnes": HybridNodeEdgeSampler,
+    }
 
     def __init__(self, input_network, sampling_method="rs", alpha=0.8, alpha_=0.8, random_state=42):
         self.input_network = input_network
@@ -43,16 +51,18 @@ class GraphSampler:
     def create_subgraphs(self):
         n_edges_ho = int(self.alpha * nx.number_of_edges(self.input_network))
         s1 = self.sampler_dict[self.sampling_method](n_edges_ho)
-        G1 = s1.sample(self.input_network)
+        G1: nx.Graph = s1.sample(self.input_network)
         self.G_ho.add_edges_from(G1.edges)
-        n_edges_tr = int(self.alpha * nx.number_of_edges(self.G_ho))
+        n_edges_tr = int(self.alpha_ * nx.number_of_edges(self.G_ho))
         s2 = self.sampler_dict[self.sampling_method](n_edges_tr)
         G2 = s2.sample(self.G_ho)
-        if nx.number_of_edges(G2) != n_edges_tr:
-            # Fallback to random sampling
-            warnings.warn(f"Sampling method {self.sampling_method} failed. Falling back to rs")
-            s2 = self.sampler_dict["rs"](n_edges_tr)
-            G2 = s2.sample(self.G_ho)
+        orig_num_e = self.input_network.number_of_edges()
+        ho_num_e = G1.number_of_edges()
+        tr_num_e = G2.number_of_edges()
+        assert tr_num_e < ho_num_e < orig_num_e, (
+            f"Sampling failed: Expected edge counts\n(orig:{orig_num_e}, holdout:{n_edges_ho}, train:{n_edges_tr})\n"
+            f"Found edge counts\n(orig:{orig_num_e}, holdout:{ho_num_e}, train:{tr_num_e})\n"
+        )
         self.G_tr.add_edges_from(G2.edges)
 
     def get_pos_neg_edges(self, G_orig, G_sample):

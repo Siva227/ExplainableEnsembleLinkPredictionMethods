@@ -21,7 +21,7 @@ from eelp.utils.parallel_utils import chunk, process_graphs
 @click.option("--output-path", "-o", required=True, type=click.Path(dir_okay=True))
 @click.option("--n-samples", "num_samples", default=10000, type=click.INT, show_default=True)
 @click.option(
-    "--sampling-method", type=click.Choice(["rs", "rswi"]), default="rs", show_default=True
+    "--sampling-method", type=click.Choice(["rs", "rswi", "hnes"]), default="rs", show_default=True
 )
 @click.option("--num-procs", type=click.INT, default=-1)
 def main(input_data_path, output_path, num_samples, sampling_method, num_procs):

@@ -161,26 +161,31 @@ def process_graphs(payload):
             holdout_pipe = create_pipeline(sampler.G_ho, G)
             training_pipe, X_tr, y_tr, feat_names_tr = compute_features(training_pipe, tr_sample)
             holdout_pipe, X_ho, y_ho, feat_names_ho = compute_features(holdout_pipe, ho_sample)
-            process_success = True
+            output_dict = g_data.copy()
+            output_dict["sampling_method"] = payload["sampling_method"]
+            output_dict["num_samples"] = payload["num_samples"]
+            output_dict["train_edges"] = nx.to_pandas_edgelist(sampler.G_tr).values
+            output_dict["holdout_edges"] = nx.to_pandas_edgelist(sampler.G_ho).values
+            output_dict["chunk_id"] = payload["id"]
         except Exception:
             logger.exception("Feature Generation Failed: {}".format(g_data["network_index"]))
             continue
         try:
-            if np.all(feat_names_tr == feat_names_ho):
-                process_success = False
-            if process_success:
-                final_tr_df = persist_features(tr_sample, X_tr, y_tr, feat_names_tr)
-                final_ho_df = persist_features(ho_sample, X_ho, y_ho, feat_names_ho)
-                grid_search, grid_results = model_selection(
-                    final_tr_df.loc[:, feat_names_tr], final_tr_df.label_true.values
-                )
-                final_ho_df.to_csv(g_data["output_path"] / "holdout_features.csv", index=False)
-                final_tr_df.to_csv(g_data["output_path"] / "training_features.csv", index=False)
-                grid_results.to_csv(g_data["output_path"] / "grid_search_results.csv", index=False)
-                best_model = grid_search.best_estimator_
-                feature_importances = best_model.feature_importances_
-                ho_pred = best_model.predict(final_ho_df.loc[:, feat_names_tr])
-                ho_proba = best_model.predict_proba(final_ho_df.loc[:, feat_names_tr])
+            assert np.all(
+                feat_names_tr == feat_names_ho
+            ), "Both train and holdout features should be same"
+            final_tr_df = persist_features(tr_sample, X_tr, y_tr, feat_names_tr)
+            final_ho_df = persist_features(ho_sample, X_ho, y_ho, feat_names_ho)
+            grid_search, grid_results = model_selection(
+                final_tr_df.loc[:, feat_names_tr], final_tr_df.label_true.values
+            )
+            final_ho_df.to_csv(g_data["output_path"] / "holdout_features.csv", index=False)
+            final_tr_df.to_csv(g_data["output_path"] / "training_features.csv", index=False)
+            grid_results.to_csv(g_data["output_path"] / "grid_search_results.csv", index=False)
+            best_model = grid_search.best_estimator_
+            feature_importances = best_model.feature_importances_
+            ho_pred = best_model.predict(final_ho_df.loc[:, feat_names_tr])
+            ho_proba = best_model.predict_proba(final_ho_df.loc[:, feat_names_tr])
         except Exception:
             logger.exception("Model Training Failed: {}".format(g_data["network_index"]))
             continue
@@ -196,24 +201,17 @@ def process_graphs(payload):
                 final_ho_df.label_true.values, ho_pred, average=None
             )
             auc_measure = metrics.roc_auc_score(final_ho_df.label_true.values, ho_proba[:, 1])
-            output_dict = g_data.copy()
-            output_dict["sampling_method"] = payload["sampling_method"]
-            output_dict["num_samples"] = payload["num_samples"]
             output_dict["heldout_AUC"] = auc_measure
             output_dict["heldout_predision"] = precision_total
             output_dict["heldout_recall"] = recall_total
             output_dict["heldout_f_measure"] = f_measure_total
             output_dict["feature_importances"] = dict(zip(feat_names_tr, feature_importances))
-            output_dict["train_edges"] = nx.to_pandas_edgelist(sampler.G_tr).values
-            output_dict["holdout_edges"] = nx.to_pandas_edgelist(sampler.G_ho).values
             output_dict["holdout_confusion_matrix"] = cm
-            output_dict["chunk_id"] = payload["id"]
-            out_data.append(output_dict)
             # TODO: Save community assignments
             joblib.dump(best_model, g_data["output_path"] / "best_model.joblib")
         except Exception:
             logger.exception("Failed to capture metrics: {}".format(g_data["network_index"]))
             continue
-
+        out_data.append(output_dict)
     results_df = pd.DataFrame.from_records(out_data)
     results_df.to_pickle(payload["output_path"])
