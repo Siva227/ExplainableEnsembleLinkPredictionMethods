@@ -1,9 +1,11 @@
 import logging
+import pickle
 
 import joblib
 import networkx as nx
 import numpy as np
 import pandas as pd
+import shap
 from sklearn import metrics
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
@@ -215,3 +217,42 @@ def process_graphs(payload):
         out_data.append(output_dict)
     results_df = pd.DataFrame.from_records(out_data)
     results_df.to_pickle(payload["output_path"])
+
+
+def calculate_shap(output_path):
+    df = pd.read_csv(output_path / "holdout_features.csv")
+    X_test = df.loc[:, [i for i in df.columns if i not in ["node_i", "node_j", "label_true"]]]
+    y_test = df.label_true.values
+    model = joblib.load(output_path / "best_model.joblib")
+    y_pred = model.predict(X_test)
+    y_probs = model.predict_proba(X_test)
+    expl = shap.TreeExplainer(model)
+    sh_v = expl.shap_values(X_test)
+    sh_iv = expl.shap_interaction_values(X_test)
+    return X_test.columns, y_test, y_pred, y_probs, expl, sh_v, sh_iv
+
+
+def process_shap(payload):
+    for output_path in payload["graph_paths"]:
+        if not any(output_path.iterdir()):
+            continue
+        (
+            feature_names,
+            true_labels,
+            model_preds,
+            model_scores,
+            explainer,
+            sh_v,
+            sh_iv,
+        ) = calculate_shap(output_path)
+        data = [
+            feature_names.tolist(),
+            true_labels,
+            model_preds,
+            model_scores,
+            explainer.expected_value,
+            sh_v,
+            sh_iv,
+        ]
+        with open(output_path / "shap_output.pickle", "wb") as f:
+            pickle.dump(data, f)

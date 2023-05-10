@@ -113,4 +113,3 @@ if __name__ == "__main__":
     logger.addHandler(c_handler)
     logger.addHandler(f_handler)
     main()
-    main()
