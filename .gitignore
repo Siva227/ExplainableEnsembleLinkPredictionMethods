@@ -129,4 +129,3 @@ venv.bak/
 # vim
 *.swp
 *.swo
-notebooks/node_embeddings.txt
